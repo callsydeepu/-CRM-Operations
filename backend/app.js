@@ -5,6 +5,8 @@ const errorHandler = require('./middleware/errorHandler');
 const authRoutes = require('./routes/authRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const productRoutes = require('./routes/productRoutes');
+const inventoryRoutes = require('./routes/inventoryRoutes');
+const challanRoutes = require('./routes/challanRoutes');
 
 const app = express();
 
@@ -20,6 +22,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/challans', challanRoutes);
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ success: true, message: 'API is running' });

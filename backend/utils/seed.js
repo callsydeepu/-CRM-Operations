@@ -69,9 +69,60 @@ const seed = async () => {
       )
     `);
 
-    await connection.query('DELETE FROM users');
-    await connection.query('DELETE FROM customers');
+    // Stock Movements table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS stock_movements (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL,
+        movement_type ENUM('IN', 'OUT') NOT NULL,
+        reason VARCHAR(255) NULL,
+        created_by INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id)
+      )
+    `);
+
+    // Challans table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS challans (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        challan_number VARCHAR(50) NOT NULL UNIQUE,
+        customer_id INT NOT NULL,
+        total_quantity INT NOT NULL DEFAULT 0,
+        status ENUM('Draft', 'Confirmed', 'Cancelled') NOT NULL DEFAULT 'Draft',
+        created_by INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT,
+        FOREIGN KEY (created_by) REFERENCES users(id)
+      )
+    `);
+
+    // Challan Items table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS challan_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        challan_id INT NOT NULL,
+        product_id INT NOT NULL,
+        product_name_snapshot VARCHAR(255) NOT NULL,
+        sku_snapshot VARCHAR(100) NOT NULL,
+        unit_price_snapshot DECIMAL(10,2) NOT NULL,
+        quantity INT NOT NULL,
+        FOREIGN KEY (challan_id) REFERENCES challans(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+      )
+    `);
+
+    await connection.query('SET FOREIGN_KEY_CHECKS = 0');
+    await connection.query('DELETE FROM challan_items');
+    await connection.query('DELETE FROM challans');
+    await connection.query('DELETE FROM stock_movements');
     await connection.query('DELETE FROM products');
+    await connection.query('DELETE FROM customers');
+    await connection.query('DELETE FROM users');
+    await connection.query('SET FOREIGN_KEY_CHECKS = 1');
     
     // Seed Users
     const salt = await bcrypt.genSalt(10);
@@ -143,8 +194,8 @@ const seed = async () => {
 
     // Seed Products
     const products = [
-      { product_name: 'Widget A - Blue', sku: 'SKU-WID-001', category: 'Widgets', unit_price: 25.00, current_stock: 2, minimum_stock: 50, warehouse_location: 'Rack A-12' },
-      { product_name: 'Gear Assembly X', sku: 'SKU-GEAR-002', category: 'Machinery', unit_price: 120.00, current_stock: 5, minimum_stock: 100, warehouse_location: 'Rack B-04' },
+      { product_name: 'Widget A - Blue', sku: 'SKU-WID-001', category: 'Widgets', unit_price: 25.00, current_stock: 100, minimum_stock: 50, warehouse_location: 'Rack A-12' },
+      { product_name: 'Gear Assembly X', sku: 'SKU-GEAR-002', category: 'Machinery', unit_price: 120.00, current_stock: 50, minimum_stock: 20, warehouse_location: 'Rack B-04' },
       { product_name: 'Connector Pin 4mm', sku: 'SKU-PIN-003', category: 'Hardware', unit_price: 2.50, current_stock: 12, minimum_stock: 500, warehouse_location: 'Bin C-01' },
       { product_name: 'Steel Bracket M', sku: 'SKU-BRK-004', category: 'Hardware', unit_price: 15.00, current_stock: 18, minimum_stock: 200, warehouse_location: 'Rack B-09' },
       { product_name: 'Industrial Valve 2-inch', sku: 'SKU-VLV-005', category: 'Plumbing', unit_price: 85.00, current_stock: 150, minimum_stock: 20, warehouse_location: 'Rack D-03' },
