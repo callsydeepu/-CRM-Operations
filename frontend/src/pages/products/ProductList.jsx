@@ -1,30 +1,87 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import AppLayout from '../../components/Layout/AppLayout';
 import Badge from '../../components/common/Badge';
 import Pagination from '../../components/common/Pagination';
+import api from '../../services/api';
+import { useToast } from '../../components/common/Toast';
 
 const ProductList = () => {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All Categories');
-  const [currentPage, setCurrentPage] = useState(1);
-  
-  // Mock data
-  const mockProducts = [
-    { id: 1, name: 'Widget A Pro', sku: 'WDG-A-001', category: 'Electronics', unit: 'Pcs', price: '₹1,250.00', stock: 145, status: 'Active' },
-    { id: 2, name: 'Steel Bearings 5mm', sku: 'BRG-S-005', category: 'Hardware', unit: 'Box (100)', price: '₹450.00', stock: 12, status: 'Active' },
-    { id: 3, name: 'Copper Wire 2mm', sku: 'WIR-C-002', category: 'Electrical', unit: 'Meter', price: '₹85.00', stock: 8, status: 'Active' },
-    { id: 4, name: 'Circuit Board v2', sku: 'CRB-V2-001', category: 'Electronics', unit: 'Pcs', price: '₹3,400.00', stock: 2, status: 'Active' },
-    { id: 5, name: 'Legacy Widget B', sku: 'WDG-B-OLD', category: 'Electronics', unit: 'Pcs', price: '₹800.00', stock: 0, status: 'Inactive' },
-  ];
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [lowStockOnly, setLowStockOnly] = useState(false);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1
+  });
+
+  const { addToast } = useToast();
+
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
+      if (searchTerm.trim()) params.search = searchTerm.trim();
+      if (categoryFilter) params.category = categoryFilter;
+      if (lowStockOnly) params.lowStock = 'true';
+
+      const res = await api.get('/products', { params });
+      if (res.data.success) {
+        setProducts(res.data.data);
+        setPagination(prev => ({
+          ...prev,
+          total: res.data.pagination.total,
+          totalPages: res.data.pagination.totalPages
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      setError(err.response?.data?.message || 'Unable to load products');
+      addToast(err.response?.data?.message || 'Unable to load products', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [pagination.page, pagination.limit, searchTerm, categoryFilter, lowStockOnly, addToast]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handleCategoryChange = (e) => {
+    setCategoryFilter(e.target.value);
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handleLowStockToggle = () => {
+    setLowStockOnly(prev => !prev);
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
 
   return (
     <AppLayout>
       <div className="page-header">
-        <div className="flex-between" style={{display: 'flex', justifyContent: 'space-between'}}>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
           <div>
             <h1 className="page-title">Products</h1>
-            <p className="page-subtitle">Manage your product catalog</p>
+            <p className="page-subtitle">Manage your product catalog and inventory levels</p>
           </div>
           <Link to="/products/new" className="btn btn-primary">
             <span className="material-symbols-outlined">add</span>
@@ -34,90 +91,161 @@ const ProductList = () => {
       </div>
 
       <div className="card">
-        <div className="card-header">
-          <div className="toolbar" style={{display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap'}}>
-            <div className="toolbar-search form-input-icon-wrapper" style={{flex: '1', minWidth: '250px', position: 'relative'}}>
-              <span className="material-symbols-outlined input-icon" style={{position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)'}}>search</span>
+        <div className="card-header" style={{padding: '1rem'}}>
+          <div className="toolbar" style={{display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', width: '100%', padding: 0, background: 'transparent'}}>
+            <div className="toolbar-search" style={{flex: '1', minWidth: '240px', position: 'relative'}}>
+              <span className="material-symbols-outlined search-icon" style={{position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--outline)'}}>search</span>
               <input 
                 type="text" 
-                className="form-input form-input-with-icon" 
-                placeholder="Search products by name or SKU..." 
+                className="form-input" 
+                placeholder="Search by product name, SKU, or category..." 
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
                 style={{paddingLeft: '2.5rem', width: '100%'}}
               />
             </div>
-            <div className="toolbar-filters">
+            <div className="toolbar-filters" style={{display: 'flex', gap: '0.75rem', alignItems: 'center'}}>
               <select 
                 className="form-select" 
                 value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
+                onChange={handleCategoryChange}
               >
-                <option>All Categories</option>
-                <option>Electronics</option>
-                <option>Hardware</option>
-                <option>Electrical</option>
+                <option value="">All Categories</option>
+                <option value="Widgets">Widgets</option>
+                <option value="Machinery">Machinery</option>
+                <option value="Hardware">Hardware</option>
+                <option value="Plumbing">Plumbing</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Electrical">Electrical</option>
+                <option value="Tools">Tools</option>
               </select>
+
+              <button 
+                type="button"
+                onClick={handleLowStockToggle}
+                className={`btn ${lowStockOnly ? 'btn-danger' : 'btn-secondary'}`}
+                style={{whiteSpace: 'nowrap'}}
+              >
+                <span className="material-symbols-outlined" style={{fontSize: '18px'}}>warning</span>
+                {lowStockOnly ? 'Showing Low Stock' : 'Low Stock Only'}
+              </button>
             </div>
           </div>
         </div>
 
-        <div className="table-responsive">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Product Name</th>
-                <th>SKU</th>
-                <th>Category</th>
-                <th>Unit</th>
-                <th className="text-right">Price</th>
-                <th className="text-right">Stock</th>
-                <th>Status</th>
-                <th className="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockProducts.map(product => (
-                <tr key={product.id}>
-                  <td>
-                    <Link to={`/products/${product.id}`} style={{fontWeight: 500, color: 'var(--primary-container)', textDecoration: 'none'}}>
-                      {product.name}
-                    </Link>
-                  </td>
-                  <td style={{fontFamily: 'monospace', color: 'var(--on-surface-variant)'}}>{product.sku}</td>
-                  <td>{product.category}</td>
-                  <td>{product.unit}</td>
-                  <td className="text-right">{product.price}</td>
-                  <td className="text-right" style={{
-                    fontWeight: 600, 
-                    color: product.stock <= 15 && product.stock > 0 ? 'var(--warning-amber)' : 
-                           product.stock === 0 ? 'var(--error-red)' : 'inherit'
-                  }}>
-                    {product.stock}
-                  </td>
-                  <td>
-                    <Badge type={product.status === 'Active' ? 'active' : 'inactive'}>
-                      {product.status}
-                    </Badge>
-                  </td>
-                  <td className="text-right">
-                    <button className="btn btn-ghost btn-sm" title="Options">
-                      <span className="material-symbols-outlined">more_vert</span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        <div className="card-body border-top">
-          <Pagination 
-            currentPage={currentPage} 
-            totalPages={5} 
-            onPageChange={setCurrentPage} 
-          />
-        </div>
+        {loading ? (
+          <div style={{padding: '3rem', textAlign: 'center', color: 'var(--on-surface-variant)'}}>
+            <div className="spinner" style={{margin: '0 auto 1rem', borderColor: 'var(--primary-container)', borderTopColor: 'transparent'}}></div>
+            Loading products...
+          </div>
+        ) : error ? (
+          <div style={{padding: '3rem', textAlign: 'center'}}>
+            <p style={{color: 'var(--error-red)', marginBottom: '1rem'}}>{error}</p>
+            <button className="btn btn-secondary" onClick={fetchProducts}>
+              <span className="material-symbols-outlined">refresh</span>
+              Retry
+            </button>
+          </div>
+        ) : products.length === 0 ? (
+          <div style={{padding: '3rem', textAlign: 'center', color: 'var(--on-surface-variant)'}}>
+            <span className="material-symbols-outlined" style={{fontSize: '48px', color: 'var(--outline)', marginBottom: '0.5rem'}}>inventory_2</span>
+            <p style={{fontSize: '1.1rem', fontWeight: 500, color: 'var(--on-surface)', marginBottom: '0.5rem'}}>No products found</p>
+            <p style={{fontSize: '0.9rem', marginBottom: '1.5rem'}}>
+              {searchTerm || categoryFilter || lowStockOnly ? 'Try adjusting your search or filters' : 'Get started by creating your first product.'}
+            </p>
+            {searchTerm || categoryFilter || lowStockOnly ? (
+              <button className="btn btn-secondary" onClick={() => { setSearchTerm(''); setCategoryFilter(''); setLowStockOnly(false); }}>
+                Clear Filters
+              </button>
+            ) : (
+              <Link to="/products/new" className="btn btn-primary">
+                <span className="material-symbols-outlined">add</span>
+                Add Product
+              </Link>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="table-responsive" style={{overflowX: 'auto'}}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Product Name</th>
+                    <th>SKU</th>
+                    <th>Category</th>
+                    <th>Location</th>
+                    <th style={{textAlign: 'right'}}>Unit Price</th>
+                    <th style={{textAlign: 'right'}}>Stock</th>
+                    <th>Status</th>
+                    <th style={{textAlign: 'right'}}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map(product => (
+                    <tr key={product.id}>
+                      <td>
+                        <Link to={`/products/${product.id}`} style={{fontWeight: 600, color: 'var(--primary-container)', textDecoration: 'none'}}>
+                          {product.product_name}
+                        </Link>
+                      </td>
+                      <td>
+                        <span style={{fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--on-surface-variant)'}}>{product.sku}</span>
+                      </td>
+                      <td>{product.category}</td>
+                      <td style={{color: product.warehouse_location ? 'inherit' : 'var(--outline)'}}>{product.warehouse_location || '-'}</td>
+                      <td style={{textAlign: 'right', fontWeight: 500}}>
+                        ₹{product.unit_price.toFixed(2)}
+                      </td>
+                      <td style={{textAlign: 'right'}}>
+                        <span style={{
+                          fontWeight: 600,
+                          color: product.is_low_stock ? 'var(--error-red)' : 'var(--on-surface)'
+                        }}>
+                          {product.current_stock}
+                        </span>
+                        <span style={{fontSize: '0.75rem', color: 'var(--outline)', marginLeft: '4px'}}>
+                          / {product.minimum_stock} min
+                        </span>
+                      </td>
+                      <td>
+                        {product.is_low_stock ? (
+                          <span className="badge badge-error" style={{display: 'inline-flex', alignItems: 'center', gap: '2px'}}>
+                            <span className="material-symbols-outlined" style={{fontSize: '12px'}}>warning</span>
+                            Low Stock
+                          </span>
+                        ) : (
+                          <span className="badge badge-success">
+                            In Stock
+                          </span>
+                        )}
+                      </td>
+                      <td style={{textAlign: 'right'}}>
+                        <div style={{display: 'inline-flex', gap: '0.25rem'}}>
+                          <Link to={`/products/${product.id}`} className="btn btn-ghost btn-sm" title="View Details" style={{padding: '4px 8px'}}>
+                            <span className="material-symbols-outlined" style={{fontSize: '18px'}}>visibility</span>
+                          </Link>
+                          <Link to={`/products/${product.id}/edit`} className="btn btn-ghost btn-sm" title="Edit Product" style={{padding: '4px 8px'}}>
+                            <span className="material-symbols-outlined" style={{fontSize: '18px'}}>edit</span>
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="card-body border-top" style={{padding: 0}}>
+              <Pagination 
+                currentPage={pagination.page} 
+                totalPages={pagination.totalPages} 
+                totalItems={pagination.total}
+                itemsPerPage={pagination.limit}
+                onPageChange={handlePageChange} 
+              />
+            </div>
+          </>
+        )}
       </div>
     </AppLayout>
   );

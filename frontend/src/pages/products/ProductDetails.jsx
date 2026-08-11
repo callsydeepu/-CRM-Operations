@@ -1,111 +1,187 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import AppLayout from '../../components/Layout/AppLayout';
 import Badge from '../../components/common/Badge';
+import api from '../../services/api';
+import { useToast } from '../../components/common/Toast';
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addToast } = useToast();
 
-  // Mock data
-  const product = {
-    id: id,
-    name: 'Widget A Pro',
-    sku: 'WDG-A-001',
-    category: 'Electronics',
-    unit: 'Pcs',
-    price: '₹1,250.00',
-    stock: 145,
-    minStock: 15,
-    status: 'Active',
-    description: 'High performance widget for enterprise applications. Features extended durability and premium components.',
-    lastRestock: 'Oct 10, 2023',
-    createdAt: 'Jan 15, 2023'
-  };
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchProduct = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get(`/products/${id}`);
+      if (res.data.success) {
+        setProduct(res.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching product details:', err);
+      setError(err.response?.data?.message || 'Unable to load product');
+      addToast(err.response?.data?.message || 'Unable to load product', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [id, addToast]);
+
+  useEffect(() => {
+    fetchProduct();
+  }, [fetchProduct]);
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div style={{padding: '4rem', textAlign: 'center'}}>
+          <div className="spinner" style={{margin: '0 auto 1rem', borderColor: 'var(--primary-container)', borderTopColor: 'transparent'}}></div>
+          Loading product specifications...
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <AppLayout>
+        <div className="card" style={{padding: '3rem', textAlign: 'center'}}>
+          <p style={{color: 'var(--error-red)', marginBottom: '1rem'}}>{error || 'Product not found'}</p>
+          <button className="btn btn-secondary" onClick={fetchProduct}>
+            <span className="material-symbols-outlined">refresh</span>
+            Retry
+          </button>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
       <div className="breadcrumb" style={{marginBottom: '1rem', color: 'var(--on-surface-variant)', fontSize: '0.9rem'}}>
-        <Link to="/products" style={{color: 'var(--primary-container)', textDecoration: 'none'}}>Products</Link> {'>'} {product.sku}
+        <Link to="/products" style={{color: 'var(--primary-container)', textDecoration: 'none'}}>Products</Link> {' > '} {product.sku}
       </div>
 
-      <div className="page-header flex-between" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-        <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+      <div className="page-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem'}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap'}}>
           <button className="btn btn-ghost btn-sm" onClick={() => navigate(-1)} style={{padding: '0.25rem'}}>
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
           <div>
-            <h1 className="page-title" style={{margin: 0}}>{product.name}</h1>
-            <div style={{fontFamily: 'monospace', color: 'var(--on-surface-variant)'}}>{product.sku}</div>
+            <h1 className="page-title" style={{margin: 0}}>{product.product_name}</h1>
+            <div style={{fontFamily: 'monospace', color: 'var(--on-surface-variant)', fontSize: '0.9rem'}}>{product.sku}</div>
           </div>
-          <Badge type={product.status === 'Active' ? 'active' : 'inactive'}>{product.status}</Badge>
+          {product.is_low_stock ? (
+            <span className="badge badge-error" style={{display: 'inline-flex', alignItems: 'center', gap: '2px'}}>
+              <span className="material-symbols-outlined" style={{fontSize: '14px'}}>warning</span>
+              Low Stock Alert
+            </span>
+          ) : (
+            <span className="badge badge-success">
+              In Stock
+            </span>
+          )}
         </div>
-        <div style={{display: 'flex', gap: '0.5rem'}}>
-          <Link to="/inventory/stock-in" className="btn btn-secondary">
-            <span className="material-symbols-outlined">add_box</span>
-            Stock IN
-          </Link>
-          <Link to={`/products/${id}/edit`} className="btn btn-outline" style={{border: '1px solid var(--border-standard)'}}>
+        <div style={{display: 'flex', gap: '0.75rem'}}>
+          <Link to={`/products/${id}/edit`} className="btn btn-primary">
             <span className="material-symbols-outlined">edit</span>
-            Edit
+            Edit Product
           </Link>
         </div>
       </div>
 
       <div style={{display: 'flex', gap: '1.5rem', flexWrap: 'wrap'}}>
-        <div className="card" style={{flex: '2', minWidth: '300px'}}>
+        {/* Left Column: Product Information */}
+        <div className="card" style={{flex: '2', minWidth: '320px'}}>
           <div className="card-header border-bottom">
-            <h2 className="card-title">Product Details</h2>
+            <h2 className="card-title" style={{fontSize: '1.1rem'}}>Product Specifications</h2>
           </div>
           <div className="card-body">
             <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem'}}>
               <div>
-                <div style={{fontSize: '0.85rem', color: 'var(--on-surface-variant)', marginBottom: '0.25rem'}}>Category</div>
-                <div style={{fontWeight: 500}}>{product.category}</div>
+                <div style={{fontSize: '0.8rem', color: 'var(--on-surface-variant)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.25rem'}}>Category</div>
+                <div style={{fontWeight: 500, fontSize: '1rem'}}>{product.category}</div>
               </div>
               <div>
-                <div style={{fontSize: '0.85rem', color: 'var(--on-surface-variant)', marginBottom: '0.25rem'}}>Selling Price</div>
-                <div style={{fontWeight: 500, color: 'var(--primary-container)'}}>{product.price}</div>
+                <div style={{fontSize: '0.8rem', color: 'var(--on-surface-variant)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.25rem'}}>Selling Unit Price</div>
+                <div style={{fontWeight: 600, fontSize: '1.25rem', color: 'var(--primary-container)'}}>
+                  ₹{product.unit_price.toFixed(2)}
+                </div>
               </div>
               <div>
-                <div style={{fontSize: '0.85rem', color: 'var(--on-surface-variant)', marginBottom: '0.25rem'}}>Unit of Measure</div>
-                <div style={{fontWeight: 500}}>{product.unit}</div>
+                <div style={{fontSize: '0.8rem', color: 'var(--on-surface-variant)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.25rem'}}>Warehouse Location</div>
+                <div style={{fontWeight: 500}}>{product.warehouse_location || 'Not specified'}</div>
               </div>
               <div>
-                <div style={{fontSize: '0.85rem', color: 'var(--on-surface-variant)', marginBottom: '0.25rem'}}>Added On</div>
-                <div style={{fontWeight: 500}}>{product.createdAt}</div>
+                <div style={{fontSize: '0.8rem', color: 'var(--on-surface-variant)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.25rem'}}>Created At</div>
+                <div style={{fontWeight: 500}}>
+                  {product.created_at ? new Date(product.created_at).toLocaleDateString() : '-'}
+                </div>
               </div>
             </div>
 
-            <div>
-              <div style={{fontSize: '0.85rem', color: 'var(--on-surface-variant)', marginBottom: '0.25rem'}}>Description</div>
-              <div style={{padding: '1rem', background: 'var(--surface-background)', borderRadius: '4px', fontSize: '0.9rem', lineHeight: 1.6}}>
-                {product.description}
+            {product.is_low_stock && (
+              <div style={{padding: '1rem', background: '#FEE2E2', border: '1px solid #EF4444', borderRadius: '6px', color: '#991B1B', display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                <span className="material-symbols-outlined" style={{fontSize: '24px', color: '#B91C1C'}}>warning</span>
+                <div>
+                  <div style={{fontWeight: 600}}>Low Stock Warning</div>
+                  <div style={{fontSize: '0.85rem'}}>Current stock level ({product.current_stock}) is below or equal to the minimum alert threshold ({product.minimum_stock}).</div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
-        <div style={{flex: '1', minWidth: '250px', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+        {/* Right Column: Inventory & Stock Level */}
+        <div style={{flex: '1', minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
           <div className="card">
             <div className="card-header border-bottom">
-              <h2 className="card-title">Inventory Status</h2>
+              <h2 className="card-title" style={{fontSize: '1.1rem'}}>Stock Summary</h2>
             </div>
             <div className="card-body">
-              <div style={{textAlign: 'center', padding: '1rem 0 2rem'}}>
-                <div style={{fontSize: '3rem', fontWeight: 700, color: product.stock > product.minStock ? 'var(--success-green)' : 'var(--warning-amber)', lineHeight: 1}}>
-                  {product.stock}
+              <div style={{textAlign: 'center', padding: '1rem 0 1.5rem'}}>
+                <div style={{
+                  fontSize: '3rem', 
+                  fontWeight: 700, 
+                  color: product.is_low_stock ? 'var(--error-red)' : 'var(--success-green)', 
+                  lineHeight: 1
+                }}>
+                  {product.current_stock}
                 </div>
-                <div style={{color: 'var(--on-surface-variant)', fontSize: '0.9rem', marginTop: '0.5rem'}}>Current Stock ({product.unit})</div>
+                <div style={{color: 'var(--on-surface-variant)', fontSize: '0.9rem', marginTop: '0.5rem'}}>
+                  Units on Hand
+                </div>
               </div>
               
               <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderTop: '1px solid var(--border-standard)'}}>
-                <span style={{color: 'var(--on-surface-variant)'}}>Min. Alert Level</span>
-                <span style={{fontWeight: 500}}>{product.minStock} {product.unit}</span>
+                <span style={{color: 'var(--on-surface-variant)'}}>Min. Alert Threshold</span>
+                <span style={{fontWeight: 600}}>{product.minimum_stock} units</span>
               </div>
               <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderTop: '1px solid var(--border-standard)'}}>
-                <span style={{color: 'var(--on-surface-variant)'}}>Last Restock</span>
-                <span style={{fontWeight: 500}}>{product.lastRestock}</span>
+                <span style={{color: 'var(--on-surface-variant)'}}>Inventory Health</span>
+                <span style={{fontWeight: 600, color: product.is_low_stock ? 'var(--error-red)' : 'var(--success-green)'}}>
+                  {product.is_low_stock ? 'Action Required' : 'Adequate'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-header border-bottom">
+              <h2 className="card-title" style={{fontSize: '1.1rem'}}>Record Details</h2>
+            </div>
+            <div className="card-body" style={{fontSize: '0.85rem'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0'}}>
+                <span style={{color: 'var(--on-surface-variant)'}}>Product ID</span>
+                <span style={{fontWeight: 500}}>#{product.id}</span>
+              </div>
+              <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderTop: '1px solid var(--border-standard)'}}>
+                <span style={{color: 'var(--on-surface-variant)'}}>Last Modified</span>
+                <span style={{fontWeight: 500}}>{product.updated_at ? new Date(product.updated_at).toLocaleDateString() : '-'}</span>
               </div>
             </div>
           </div>
