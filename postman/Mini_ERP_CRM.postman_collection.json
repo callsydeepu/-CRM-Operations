@@ -1,8 +1,8 @@
 {
   "info": {
     "name": "Mini ERP + CRM API",
-    "_postman_id": "mini-erp-crm-api-collection-v1",
-    "description": "Postman Collection for Mini ERP + CRM Operations Portal covering Auth, Customers, Products, Inventory, Sales Challans, and Dashboard.",
+    "_postman_id": "mini-erp-crm-api-collection-v2",
+    "description": "Complete Postman API Collection for Mini ERP + CRM Operations Portal. Supports automatic JWT token handling for Authentication, Customers CRM, Products, Inventory Movements, Sales Challans, and Dashboard.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -22,52 +22,63 @@
       "name": "1. Authentication",
       "item": [
         {
-          "name": "Login (Admin)",
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "    var data = pm.response.json();",
+                  "    if (data.token) {",
+                  "        pm.collectionVariables.set('token', data.token);",
+                  "        console.log('JWT token automatically updated in collection variable.');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Password123\"\n}"
+              "raw": "{\n  \"name\": \"Primary Administrator\",\n  \"email\": \"admin@mycompany.com\",\n  \"password\": \"MyStrongPassword123!\",\n  \"role\": \"Admin\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "description": "Register a new real user account (Admin, Sales, Warehouse, or Accounts). Automatically updates the {{token}} variable."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var data = pm.response.json();",
+                  "    if (data.token) {",
+                  "        pm.collectionVariables.set('token', data.token);",
+                  "        console.log('JWT token automatically updated in collection variable.');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@mycompany.com\",\n  \"password\": \"MyStrongPassword123!\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
-            "description": "Authenticate as Admin user. Stores JWT token for subsequent requests."
-          }
-        },
-        {
-          "name": "Login (Sales)",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"sales@example.com\",\n  \"password\": \"Password123\"\n}"
-            },
-            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
-          }
-        },
-        {
-          "name": "Login (Warehouse)",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"warehouse@example.com\",\n  \"password\": \"Password123\"\n}"
-            },
-            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
-          }
-        },
-        {
-          "name": "Login (Accounts)",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"accounts@example.com\",\n  \"password\": \"Password123\"\n}"
-            },
-            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+            "description": "Authenticate user and automatically store the returned JWT token."
           }
         },
         {
@@ -313,7 +324,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customer_id\": 1,\n  \"items\": [\n    { \"product_id\": 1, \"quantity\": 10 },\n    { \"product_id\": 2, \"quantity\": 5 }\n  ]\n}"
+              "raw": "{\n  \"customer_id\": 1,\n  \"items\": [\n    { \"product_id\": 1, \"quantity\": 10 }\n  ]\n}"
             },
             "url": { "raw": "{{baseUrl}}/challans", "host": ["{{baseUrl}}"], "path": ["challans"] }
           }
@@ -328,7 +339,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customer_id\": 1,\n  \"items\": [\n    { \"product_id\": 1, \"quantity\": 12 },\n    { \"product_id\": 2, \"quantity\": 6 }\n  ]\n}"
+              "raw": "{\n  \"customer_id\": 1,\n  \"items\": [\n    { \"product_id\": 1, \"quantity\": 15 }\n  ]\n}"
             },
             "url": { "raw": "{{baseUrl}}/challans/1", "host": ["{{baseUrl}}"], "path": ["challans", "1"] }
           }
@@ -352,6 +363,10 @@
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 1,\n  \"items\": []\n}"
+            },
             "url": { "raw": "{{baseUrl}}/challans/1/cancel", "host": ["{{baseUrl}}"], "path": ["challans", "1", "cancel"] }
           }
         }
