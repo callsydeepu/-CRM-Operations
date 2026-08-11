@@ -1,0 +1,121 @@
+.dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.kpi-card {
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--border-standard);
+  border-radius: 8px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.kpi-card.border-warning { border-top: 3px solid var(--warning-amber); }
+.kpi-card.border-success { border-top: 3px solid var(--success-green); }
+
+.kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kpi-label {
+  font-size: 0.9rem;
+  color: var(--on-surface-variant);
+  font-weight: 500;
+}
+
+.kpi-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+
+.kpi-trend {
+  font-size: 0.8rem;
+  color: var(--on-surface-variant);
+}
+
+.text-primary { color: var(--primary-container); }
+.text-secondary { color: #6c757d; }
+.text-warning { color: var(--warning-amber); }
+.text-success { color: var(--success-green); }
+.text-outline { color: var(--outline); }
+.text-error { color: var(--error-red); }
+
+.dashboard-row {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.col-2-3 { flex: 2; }
+.col-1-3 { flex: 1; }
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chart-placeholder {
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+  color: var(--on-surface-variant);
+  border: 1px dashed var(--border-standard);
+  border-radius: 4px;
+}
+
+.progress-group {
+  margin-bottom: 1.25rem;
+}
+
+.progress-group:last-child {
+  margin-bottom: 0;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  height: 8px;
+  background-color: var(--border-standard);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.bg-success { background-color: var(--success-green); }
+.bg-warning { background-color: var(--warning-amber); }
+.bg-error { background-color: var(--error-red); }
+
+.font-bold { font-weight: 600; }
+.text-right { text-align: right; }
+
+@media (max-width: 992px) {
+  .dashboard-row {
+    flex-direction: column;
+  }
+}
