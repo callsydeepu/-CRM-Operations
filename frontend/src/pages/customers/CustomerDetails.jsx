@@ -5,11 +5,14 @@ import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
+import { useAuth } from '../../context/AuthContext';
 
 const CustomerDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { user } = useAuth();
+  const canManageCustomers = user?.role === 'Admin' || user?.role === 'Sales';
 
   const [customer, setCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -106,16 +109,18 @@ const CustomerDetails = () => {
           <Badge type={customer.status ? customer.status.toLowerCase() : 'lead'}>{customer.status}</Badge>
           <Badge type={customer.customer_type ? customer.customer_type.toLowerCase() : 'retail'}>{customer.customer_type}</Badge>
         </div>
-        <div style={{display: 'flex', gap: '0.75rem'}}>
-          <button className="btn btn-secondary" onClick={() => setIsFollowupModalOpen(true)}>
-            <span className="material-symbols-outlined">edit_calendar</span>
-            Update Follow-up
-          </button>
-          <Link to={`/customers/${id}/edit`} className="btn btn-primary">
-            <span className="material-symbols-outlined">edit</span>
-            Edit Customer
-          </Link>
-        </div>
+        {canManageCustomers && (
+          <div style={{display: 'flex', gap: '0.75rem'}}>
+            <button className="btn btn-secondary" onClick={() => setIsFollowupModalOpen(true)}>
+              <span className="material-symbols-outlined">edit_calendar</span>
+              Update Follow-up
+            </button>
+            <Link to={`/customers/${id}/edit`} className="btn btn-primary">
+              <span className="material-symbols-outlined">edit</span>
+              Edit Customer
+            </Link>
+          </div>
+        )}
       </div>
 
       <div style={{display: 'flex', gap: '1.5rem', flexWrap: 'wrap'}}>
@@ -160,12 +165,14 @@ const CustomerDetails = () => {
             <div style={{borderTop: '1px solid var(--border-standard)', paddingTop: '1.5rem'}}>
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem'}}>
                 <div style={{fontSize: '0.8rem', color: 'var(--on-surface-variant)', fontWeight: 600, textTransform: 'uppercase'}}>Notes & History</div>
-                <button className="btn btn-ghost btn-sm" onClick={() => setIsFollowupModalOpen(true)} style={{padding: '2px 6px', fontSize: '11px'}}>
-                  Edit Notes
-                </button>
+                {canManageCustomers && (
+                  <button className="btn btn-ghost btn-sm" onClick={() => setIsFollowupModalOpen(true)} style={{padding: '2px 6px', fontSize: '11px'}}>
+                    Edit Notes
+                  </button>
+                )}
               </div>
               <div style={{padding: '1rem', background: 'var(--surface-background)', borderRadius: '4px', fontSize: '0.9rem', lineHeight: 1.6, minHeight: '60px'}}>
-                {customer.notes || <span style={{color: 'var(--outline)'}}>No notes added yet. Click "Update Follow-up" to record discussion notes.</span>}
+                {customer.notes || <span style={{color: 'var(--outline)'}}>{canManageCustomers ? 'No notes added yet. Click "Update Follow-up" to record discussion notes.' : 'No notes recorded.'}</span>}
               </div>
             </div>
           </div>
@@ -189,14 +196,16 @@ const CustomerDetails = () => {
                   </div>
                 </div>
               </div>
-              <button 
-                className="btn btn-secondary" 
-                onClick={() => setIsFollowupModalOpen(true)}
-                style={{width: '100%', justifyContent: 'center'}}
-              >
-                <span className="material-symbols-outlined">schedule</span>
-                Schedule / Update
-              </button>
+              {canManageCustomers && (
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => setIsFollowupModalOpen(true)}
+                  style={{width: '100%', justifyContent: 'center'}}
+                >
+                  <span className="material-symbols-outlined">schedule</span>
+                  Schedule / Update
+                </button>
+              )}
             </div>
           </div>
 
@@ -223,43 +232,45 @@ const CustomerDetails = () => {
       </div>
 
       {/* Follow-up Update Modal */}
-      <Modal
-        isOpen={isFollowupModalOpen}
-        onClose={() => setIsFollowupModalOpen(false)}
-        title="Update Follow-up & Notes"
-        footer={
-          <>
-            <button className="btn btn-secondary" onClick={() => setIsFollowupModalOpen(false)} disabled={savingFollowup}>
-              Cancel
-            </button>
-            <button className="btn btn-primary" onClick={handleSaveFollowup} disabled={savingFollowup}>
-              {savingFollowup ? 'Saving...' : 'Save Follow-up'}
-            </button>
-          </>
-        }
-      >
-        <form onSubmit={handleSaveFollowup}>
-          <div className="form-group" style={{marginBottom: '1rem'}}>
-            <label className="form-label">Follow-up Date</label>
-            <input 
-              type="date" 
-              className="form-input" 
-              value={followupDate} 
-              onChange={(e) => setFollowupDate(e.target.value)} 
-            />
-          </div>
-          <div className="form-group" style={{marginBottom: 0}}>
-            <label className="form-label">Follow-up Notes</label>
-            <textarea 
-              className="form-textarea" 
-              rows="4" 
-              value={followupNotes} 
-              onChange={(e) => setFollowupNotes(e.target.value)} 
-              placeholder="Record discussion outcomes, client requirements, next steps..."
-            ></textarea>
-          </div>
-        </form>
-      </Modal>
+      {canManageCustomers && (
+        <Modal
+          isOpen={isFollowupModalOpen}
+          onClose={() => setIsFollowupModalOpen(false)}
+          title="Update Follow-up & Notes"
+          footer={
+            <>
+              <button className="btn btn-secondary" onClick={() => setIsFollowupModalOpen(false)} disabled={savingFollowup}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleSaveFollowup} disabled={savingFollowup}>
+                {savingFollowup ? 'Saving...' : 'Save Follow-up'}
+              </button>
+            </>
+          }
+        >
+          <form onSubmit={handleSaveFollowup}>
+            <div className="form-group" style={{marginBottom: '1rem'}}>
+              <label className="form-label">Follow-up Date</label>
+              <input 
+                type="date" 
+                className="form-input" 
+                value={followupDate} 
+                onChange={(e) => setFollowupDate(e.target.value)} 
+              />
+            </div>
+            <div className="form-group" style={{marginBottom: 0}}>
+              <label className="form-label">Follow-up Notes</label>
+              <textarea 
+                className="form-textarea" 
+                rows="4" 
+                value={followupNotes} 
+                onChange={(e) => setFollowupNotes(e.target.value)} 
+                placeholder="Record discussion outcomes, client requirements, next steps..."
+              ></textarea>
+            </div>
+          </form>
+        </Modal>
+      )}
     </AppLayout>
   );
 };

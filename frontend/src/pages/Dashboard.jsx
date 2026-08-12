@@ -4,9 +4,14 @@ import AppLayout from '../components/Layout/AppLayout';
 import Badge from '../components/common/Badge';
 import api from '../services/api';
 import { useToast } from '../components/common/Toast';
+import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
 
 const Dashboard = () => {
+  const { user } = useAuth();
+  const canManageChallans = user?.role === 'Admin' || user?.role === 'Sales';
+  const canAdjustStock = user?.role === 'Admin' || user?.role === 'Warehouse';
+
   const [stats, setStats] = useState({
     totalCustomers: 0,
     totalProducts: 0,
@@ -214,12 +219,14 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  <div style={{marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-standard)'}}>
-                    <Link to="/challans/new" className="btn btn-primary btn-sm" style={{width: '100%', justifyContent: 'center'}}>
-                      <span className="material-symbols-outlined" style={{fontSize: '18px'}}>add</span>
-                      Create New Challan
-                    </Link>
-                  </div>
+                  {canManageChallans && (
+                    <div style={{marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-standard)'}}>
+                      <Link to="/challans/new" className="btn btn-primary btn-sm" style={{width: '100%', justifyContent: 'center'}}>
+                        <span className="material-symbols-outlined" style={{fontSize: '18px'}}>add</span>
+                        Create New Challan
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -250,7 +257,7 @@ const Dashboard = () => {
                           <th style={{textAlign: 'right'}}>Current Stock</th>
                           <th style={{textAlign: 'right'}}>Minimum Stock</th>
                           <th>Status</th>
-                          <th style={{textAlign: 'right'}}>Quick Action</th>
+                          {canAdjustStock && <th style={{textAlign: 'right'}}>Quick Action</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -273,11 +280,13 @@ const Dashboard = () => {
                                 Needs Restock
                               </span>
                             </td>
-                            <td style={{textAlign: 'right'}}>
-                              <Link to="/inventory/stock-in" className="btn btn-secondary btn-sm" style={{borderColor: 'var(--success-green)', color: 'var(--success-green)'}}>
-                                Stock IN
-                              </Link>
-                            </td>
+                            {canAdjustStock && (
+                              <td style={{textAlign: 'right'}}>
+                                <Link to="/inventory/stock-in" className="btn btn-secondary btn-sm" style={{borderColor: 'var(--success-green)', color: 'var(--success-green)'}}>
+                                  Stock IN
+                                </Link>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>

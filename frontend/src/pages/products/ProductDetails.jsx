@@ -4,11 +4,14 @@ import AppLayout from '../../components/Layout/AppLayout';
 import Badge from '../../components/common/Badge';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
+import { useAuth } from '../../context/AuthContext';
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { user } = useAuth();
+  const canManageProducts = user?.role === 'Admin' || user?.role === 'Warehouse';
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -86,12 +89,14 @@ const ProductDetails = () => {
             </span>
           )}
         </div>
-        <div style={{display: 'flex', gap: '0.75rem'}}>
-          <Link to={`/products/${id}/edit`} className="btn btn-primary">
-            <span className="material-symbols-outlined">edit</span>
-            Edit Product
-          </Link>
-        </div>
+        {canManageProducts && (
+          <div style={{display: 'flex', gap: '0.75rem'}}>
+            <Link to={`/products/${id}/edit`} className="btn btn-primary">
+              <span className="material-symbols-outlined">edit</span>
+              Edit Product
+            </Link>
+          </div>
+        )}
       </div>
 
       <div style={{display: 'flex', gap: '1.5rem', flexWrap: 'wrap'}}>

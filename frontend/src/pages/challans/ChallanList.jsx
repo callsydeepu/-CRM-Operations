@@ -5,8 +5,12 @@ import Badge from '../../components/common/Badge';
 import Pagination from '../../components/common/Pagination';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
+import { useAuth } from '../../context/AuthContext';
 
 const ChallanList = () => {
+  const { user } = useAuth();
+  const canManageChallans = user?.role === 'Admin' || user?.role === 'Sales';
+
   const [challans, setChallans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,9 +46,9 @@ const ChallanList = () => {
         }));
       }
     } catch (err) {
-      console.error('Error loading challans:', err);
-      setError(err.response?.data?.message || 'Unable to load sales challans');
-      addToast(err.response?.data?.message || 'Unable to load sales challans', 'error');
+      console.error('Error fetching challans:', err);
+      setError(err.response?.data?.message || 'Unable to load challans');
+      addToast(err.response?.data?.message || 'Unable to load challans', 'error');
     } finally {
       setLoading(false);
     }
@@ -68,27 +72,20 @@ const ChallanList = () => {
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'Confirmed': return <Badge type="confirmed">Confirmed</Badge>;
-      case 'Draft': return <Badge type="draft">Draft</Badge>;
-      case 'Cancelled': return <Badge type="cancelled">Cancelled</Badge>;
-      default: return <Badge>{status}</Badge>;
-    }
-  };
-
   return (
     <AppLayout>
       <div className="page-header">
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '1rem'}}>
           <div>
             <h1 className="page-title">Sales Challans</h1>
-            <p className="page-subtitle">Generate, manage, and dispatch goods delivery challans</p>
+            <p className="page-subtitle">Generate dispatch notes, manage draft delivery orders, and track dispatches</p>
           </div>
-          <Link to="/challans/new" className="btn btn-primary">
-            <span className="material-symbols-outlined">add</span>
-            Create Challan
-          </Link>
+          {canManageChallans && (
+            <Link to="/challans/new" className="btn btn-primary">
+              <span className="material-symbols-outlined">add</span>
+              Create Challan
+            </Link>
+          )}
         </div>
       </div>
 
@@ -100,13 +97,13 @@ const ChallanList = () => {
               <input 
                 type="text" 
                 className="form-input" 
-                placeholder="Search by Challan # or Customer..." 
+                placeholder="Search by challan #, customer, or business..." 
                 value={searchTerm}
                 onChange={handleSearchChange}
                 style={{paddingLeft: '2.5rem', width: '100%'}}
               />
             </div>
-            <div className="toolbar-filters">
+            <div className="toolbar-filters" style={{display: 'flex', gap: '0.75rem'}}>
               <select 
                 className="form-select" 
                 value={statusFilter}
@@ -136,21 +133,21 @@ const ChallanList = () => {
           </div>
         ) : challans.length === 0 ? (
           <div style={{padding: '3rem', textAlign: 'center', color: 'var(--on-surface-variant)'}}>
-            <span className="material-symbols-outlined" style={{fontSize: '48px', color: 'var(--outline)', marginBottom: '0.5rem'}}>receipt_long</span>
-            <p style={{fontSize: '1.1rem', fontWeight: 500, color: 'var(--on-surface)', marginBottom: '0.5rem'}}>No challans found</p>
+            <span className="material-symbols-outlined" style={{fontSize: '48px', color: 'var(--outline)', marginBottom: '0.5rem'}}>local_shipping</span>
+            <p style={{fontSize: '1.1rem', fontWeight: 500, color: 'var(--on-surface)', marginBottom: '0.5rem'}}>No sales challans found</p>
             <p style={{fontSize: '0.9rem', marginBottom: '1.5rem'}}>
-              {searchTerm || statusFilter ? 'Try clearing your filters' : 'Create your first delivery challan.'}
+              {searchTerm || statusFilter ? 'Try adjusting your search or filter' : (canManageChallans ? 'Create your first delivery challan to get started.' : 'No delivery records available.')}
             </p>
             {searchTerm || statusFilter ? (
               <button className="btn btn-secondary" onClick={() => { setSearchTerm(''); setStatusFilter(''); }}>
                 Clear Filters
               </button>
-            ) : (
+            ) : canManageChallans ? (
               <Link to="/challans/new" className="btn btn-primary">
                 <span className="material-symbols-outlined">add</span>
                 Create Challan
               </Link>
-            )}
+            ) : null}
           </div>
         ) : (
           <>
@@ -158,40 +155,52 @@ const ChallanList = () => {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Challan #</th>
+                    <th>Challan Number</th>
                     <th>Customer</th>
-                    <th style={{textAlign: 'right'}}>Total Qty</th>
                     <th>Date</th>
+                    <th style={{textAlign: 'right'}}>Total Items</th>
+                    <th style={{textAlign: 'right'}}>Total Value</th>
                     <th>Status</th>
-                    <th>Created By</th>
                     <th style={{textAlign: 'right'}}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {challans.map(challan => (
-                    <tr key={challan.id}>
+                  {challans.map(item => (
+                    <tr key={item.id}>
                       <td>
-                        <Link to={`/challans/${challan.id}`} style={{fontWeight: 600, color: 'var(--primary-container)', textDecoration: 'none'}}>
-                          {challan.challan_number}
+                        <Link to={`/challans/${item.id}`} style={{fontWeight: 600, color: 'var(--primary-container)', textDecoration: 'none', fontFamily: 'monospace'}}>
+                          {item.challan_number}
                         </Link>
                       </td>
                       <td>
-                        <div style={{display: 'flex', flexDirection: 'column'}}>
-                          <span style={{fontWeight: 500}}>{challan.customer_name}</span>
-                          {challan.business_name && <span style={{fontSize: '0.75rem', color: 'var(--outline)'}}>{challan.business_name}</span>}
+                        <div>
+                          <div style={{fontWeight: 500}}>{item.customer_name}</div>
+                          {item.business_name && (
+                            <div style={{fontSize: '0.75rem', color: 'var(--outline)'}}>{item.business_name}</div>
+                          )}
                         </div>
                       </td>
-                      <td style={{textAlign: 'right', fontWeight: 600}}>{challan.total_quantity} units</td>
-                      <td style={{color: 'var(--on-surface-variant)'}}>{new Date(challan.created_at).toLocaleDateString()}</td>
-                      <td>{getStatusBadge(challan.status)}</td>
-                      <td style={{color: 'var(--on-surface-variant)'}}>{challan.created_by_name}</td>
+                      <td style={{whiteSpace: 'nowrap', color: 'var(--on-surface-variant)'}}>
+                        {new Date(item.challan_date || item.created_at).toLocaleDateString()}
+                      </td>
+                      <td style={{textAlign: 'right', fontWeight: 500}}>
+                        {item.total_items} {item.total_items === 1 ? 'item' : 'items'}
+                      </td>
+                      <td style={{textAlign: 'right', fontWeight: 600}}>
+                        ₹{Number(item.total_amount || 0).toFixed(2)}
+                      </td>
+                      <td>
+                        <Badge type={item.status ? item.status.toLowerCase() : 'draft'}>
+                          {item.status}
+                        </Badge>
+                      </td>
                       <td style={{textAlign: 'right'}}>
                         <div style={{display: 'inline-flex', gap: '0.25rem'}}>
-                          <Link to={`/challans/${challan.id}`} className="btn btn-ghost btn-sm" title="View Details" style={{padding: '4px 8px'}}>
+                          <Link to={`/challans/${item.id}`} className="btn btn-ghost btn-sm" title="View Details" style={{padding: '4px 8px'}}>
                             <span className="material-symbols-outlined" style={{fontSize: '18px'}}>visibility</span>
                           </Link>
-                          {challan.status === 'Draft' && (
-                            <Link to={`/challans/${challan.id}/edit`} className="btn btn-ghost btn-sm" title="Edit Draft" style={{padding: '4px 8px'}}>
+                          {canManageChallans && item.status === 'Draft' && (
+                            <Link to={`/challans/${item.id}/edit`} className="btn btn-ghost btn-sm" title="Edit Draft" style={{padding: '4px 8px'}}>
                               <span className="material-symbols-outlined" style={{fontSize: '18px'}}>edit</span>
                             </Link>
                           )}

@@ -291,13 +291,18 @@ POST /api/auth/register
 
 ## 13. Assumptions
 
+### Role Boundaries
+The application follows standard enterprise separation of concerns where the case study did not explicitly define permissions:
+
+- **Sales** manages CRM and sales challans but cannot perform direct warehouse stock adjustments.
+- **Warehouse** manages product master entries and physical stock IN/OUT but cannot create customer accounts or sales challans.
+- **Accounts** has read-only visibility across modules.
+- **Admin** has full system access.
+
+### Technical Decisions
 1. **Database Engine**: MySQL with InnoDB was used to ensure ACID transaction support (`START TRANSACTION`, `COMMIT`, `ROLLBACK`) and row locking (`FOR UPDATE`) during challan confirmation.
-2. **Role Boundaries**: Standard enterprise separation of concerns was applied where permissions were not explicitly detailed in the PDF:
-   - `Sales` manages CRM and challans, but cannot perform direct warehouse adjustments.
-   - `Warehouse` manages product master entries and physical stock IN/OUT, but cannot create customer accounts or sales challans.
-   - `Accounts` has read-only visibility across all modules.
-3. **Challan Numbering**: Automatically generated sequentially (`CH-YYYY-XXXXXX`) to ensure unique dispatch tracking.
-4. **Local Evaluation**: This project is submitted for local execution and GitHub evaluation; cloud deployment is not part of this submission.
+2. **Challan Numbering**: Automatically generated sequentially (`CH-YYYY-XXXXXX`) to ensure unique dispatch tracking.
+3. **Local Evaluation**: This project is submitted for local execution and GitHub evaluation; cloud deployment is not part of this submission.
 
 ---
 
@@ -310,17 +315,18 @@ POST /api/auth/register
 
 ## 15. Testing
 
-The project includes an automated test battery with **102/102 passing tests**:
+The project includes an automated test battery with **164/164 total passing tests**:
 
 * **Batch 1 (Auth & Health)**: `node utils/test.js` — 15/15 tests passing.
 * **Batch 2 (CRM & Products)**: `node utils/test-batch2.js` — 24/24 tests passing.
 * **Batch 3 (Inventory & Challans)**: `node utils/test-batch3.js` — 13/13 tests passing.
 * **Batch 4 (Full E2E Integration)**: `node utils/test-batch4.js` — 21/21 tests passing.
 * **Batch 5 (Complete QA & Edge Cases)**: `node utils/test-full-qa.js` — 29/29 tests passing.
+* **RBAC Security Audit (`node utils/test-rbac-security.js`)**: 62/62 direct API role-permission tests passing.
 * **Frontend Production Build**: `npm run build` (`npx vite build`) compiles with 0 errors.
 
-To run the complete test suite locally:
+To run the RBAC role security audit locally:
 ```bash
 cd backend
-node utils/test-full-qa.js
+node utils/test-rbac-security.js
 ```

@@ -5,8 +5,12 @@ import Badge from '../../components/common/Badge';
 import Pagination from '../../components/common/Pagination';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
+import { useAuth } from '../../context/AuthContext';
 
 const CustomerList = () => {
+  const { user } = useAuth();
+  const canManageCustomers = user?.role === 'Admin' || user?.role === 'Sales';
+
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -83,10 +87,12 @@ const CustomerList = () => {
             <h1 className="page-title">Customers</h1>
             <p className="page-subtitle">Manage your customer relationships</p>
           </div>
-          <Link to="/customers/new" className="btn btn-primary">
-            <span className="material-symbols-outlined">add</span>
-            Add Customer
-          </Link>
+          {canManageCustomers && (
+            <Link to="/customers/new" className="btn btn-primary">
+              <span className="material-symbols-outlined">add</span>
+              Add Customer
+            </Link>
+          )}
         </div>
       </div>
 
@@ -147,18 +153,18 @@ const CustomerList = () => {
             <span className="material-symbols-outlined" style={{fontSize: '48px', color: 'var(--outline)', marginBottom: '0.5rem'}}>person_off</span>
             <p style={{fontSize: '1.1rem', fontWeight: 500, color: 'var(--on-surface)', marginBottom: '0.5rem'}}>No customers found</p>
             <p style={{fontSize: '0.9rem', marginBottom: '1.5rem'}}>
-              {searchTerm || typeFilter || statusFilter ? 'Try adjusting your search or filters' : 'Get started by creating your first customer.'}
+              {searchTerm || typeFilter || statusFilter ? 'Try adjusting your search or filters' : (canManageCustomers ? 'Get started by creating your first customer.' : 'No customer records available.')}
             </p>
             {searchTerm || typeFilter || statusFilter ? (
               <button className="btn btn-secondary" onClick={() => { setSearchTerm(''); setTypeFilter(''); setStatusFilter(''); }}>
                 Clear Filters
               </button>
-            ) : (
+            ) : canManageCustomers ? (
               <Link to="/customers/new" className="btn btn-primary">
                 <span className="material-symbols-outlined">add</span>
                 Add Customer
               </Link>
-            )}
+            ) : null}
           </div>
         ) : (
           <>
@@ -208,9 +214,11 @@ const CustomerList = () => {
                           <Link to={`/customers/${customer.id}`} className="btn btn-ghost btn-sm" title="View Details" style={{padding: '4px 8px'}}>
                             <span className="material-symbols-outlined" style={{fontSize: '18px'}}>visibility</span>
                           </Link>
-                          <Link to={`/customers/${customer.id}/edit`} className="btn btn-ghost btn-sm" title="Edit Customer" style={{padding: '4px 8px'}}>
-                            <span className="material-symbols-outlined" style={{fontSize: '18px'}}>edit</span>
-                          </Link>
+                          {canManageCustomers && (
+                            <Link to={`/customers/${customer.id}/edit`} className="btn btn-ghost btn-sm" title="Edit Customer" style={{padding: '4px 8px'}}>
+                              <span className="material-symbols-outlined" style={{fontSize: '18px'}}>edit</span>
+                            </Link>
+                          )}
                         </div>
                       </td>
                     </tr>

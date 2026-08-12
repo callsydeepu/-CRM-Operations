@@ -5,8 +5,12 @@ import Badge from '../../components/common/Badge';
 import Pagination from '../../components/common/Pagination';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
+import { useAuth } from '../../context/AuthContext';
 
 const ProductList = () => {
+  const { user } = useAuth();
+  const canManageProducts = user?.role === 'Admin' || user?.role === 'Warehouse';
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -83,10 +87,12 @@ const ProductList = () => {
             <h1 className="page-title">Products</h1>
             <p className="page-subtitle">Manage your product catalog and inventory levels</p>
           </div>
-          <Link to="/products/new" className="btn btn-primary">
-            <span className="material-symbols-outlined">add</span>
-            Add Product
-          </Link>
+          {canManageProducts && (
+            <Link to="/products/new" className="btn btn-primary">
+              <span className="material-symbols-outlined">add</span>
+              Add Product
+            </Link>
+          )}
         </div>
       </div>
 
@@ -151,18 +157,18 @@ const ProductList = () => {
             <span className="material-symbols-outlined" style={{fontSize: '48px', color: 'var(--outline)', marginBottom: '0.5rem'}}>inventory_2</span>
             <p style={{fontSize: '1.1rem', fontWeight: 500, color: 'var(--on-surface)', marginBottom: '0.5rem'}}>No products found</p>
             <p style={{fontSize: '0.9rem', marginBottom: '1.5rem'}}>
-              {searchTerm || categoryFilter || lowStockOnly ? 'Try adjusting your search or filters' : 'Get started by creating your first product.'}
+              {searchTerm || categoryFilter || lowStockOnly ? 'Try adjusting your search or filters' : (canManageProducts ? 'Get started by creating your first product.' : 'No products available.')}
             </p>
             {searchTerm || categoryFilter || lowStockOnly ? (
               <button className="btn btn-secondary" onClick={() => { setSearchTerm(''); setCategoryFilter(''); setLowStockOnly(false); }}>
                 Clear Filters
               </button>
-            ) : (
+            ) : canManageProducts ? (
               <Link to="/products/new" className="btn btn-primary">
                 <span className="material-symbols-outlined">add</span>
                 Add Product
               </Link>
-            )}
+            ) : null}
           </div>
         ) : (
           <>
@@ -224,9 +230,11 @@ const ProductList = () => {
                           <Link to={`/products/${product.id}`} className="btn btn-ghost btn-sm" title="View Details" style={{padding: '4px 8px'}}>
                             <span className="material-symbols-outlined" style={{fontSize: '18px'}}>visibility</span>
                           </Link>
-                          <Link to={`/products/${product.id}/edit`} className="btn btn-ghost btn-sm" title="Edit Product" style={{padding: '4px 8px'}}>
-                            <span className="material-symbols-outlined" style={{fontSize: '18px'}}>edit</span>
-                          </Link>
+                          {canManageProducts && (
+                            <Link to={`/products/${product.id}/edit`} className="btn btn-ghost btn-sm" title="Edit Product" style={{padding: '4px 8px'}}>
+                              <span className="material-symbols-outlined" style={{fontSize: '18px'}}>edit</span>
+                            </Link>
+                          )}
                         </div>
                       </td>
                     </tr>

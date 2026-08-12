@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import AppLayout from '../../components/Layout/AppLayout';
-import Badge from '../../components/common/Badge';
 import Pagination from '../../components/common/Pagination';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
+import { useAuth } from '../../context/AuthContext';
 
 const InventoryList = () => {
+  const { user } = useAuth();
+  const canAdjustStock = user?.role === 'Admin' || user?.role === 'Warehouse';
+
   const [activeTab, setActiveTab] = useState('stock'); // 'stock' | 'movements'
   const [products, setProducts] = useState([]);
   const [movements, setMovements] = useState([]);
@@ -101,16 +104,18 @@ const InventoryList = () => {
             <h1 className="page-title">Inventory Management</h1>
             <p className="page-subtitle">Track stock levels, record movements, and review history</p>
           </div>
-          <div style={{display: 'flex', gap: '0.75rem'}}>
-            <Link to="/inventory/stock-out" className="btn btn-secondary" style={{borderColor: 'var(--error-red)', color: 'var(--error-red)'}}>
-              <span className="material-symbols-outlined" style={{fontSize: '18px'}}>remove_circle</span>
-              Stock OUT
-            </Link>
-            <Link to="/inventory/stock-in" className="btn btn-primary" style={{backgroundColor: 'var(--success-green)'}}>
-              <span className="material-symbols-outlined" style={{fontSize: '18px'}}>add_circle</span>
-              Stock IN
-            </Link>
-          </div>
+          {canAdjustStock && (
+            <div style={{display: 'flex', gap: '0.75rem'}}>
+              <Link to="/inventory/stock-out" className="btn btn-secondary" style={{borderColor: 'var(--error-red)', color: 'var(--error-red)'}}>
+                <span className="material-symbols-outlined" style={{fontSize: '18px'}}>remove_circle</span>
+                Stock OUT
+              </Link>
+              <Link to="/inventory/stock-in" className="btn btn-primary" style={{backgroundColor: 'var(--success-green)'}}>
+                <span className="material-symbols-outlined" style={{fontSize: '18px'}}>add_circle</span>
+                Stock IN
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
@@ -264,7 +269,7 @@ const InventoryList = () => {
                       <th style={{textAlign: 'right'}}>Current Stock</th>
                       <th style={{textAlign: 'right'}}>Min Level</th>
                       <th>Status</th>
-                      <th style={{textAlign: 'right'}}>Actions</th>
+                      {canAdjustStock && <th style={{textAlign: 'right'}}>Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -301,16 +306,18 @@ const InventoryList = () => {
                             </span>
                           )}
                         </td>
-                        <td style={{textAlign: 'right'}}>
-                          <div style={{display: 'inline-flex', gap: '0.25rem'}}>
-                            <Link to="/inventory/stock-in" className="btn btn-ghost btn-sm" title="Stock IN" style={{color: 'var(--success-green)'}}>
-                              <span className="material-symbols-outlined" style={{fontSize: '18px'}}>add_circle</span>
-                            </Link>
-                            <Link to="/inventory/stock-out" className="btn btn-ghost btn-sm" title="Stock OUT" style={{color: 'var(--error-red)'}}>
-                              <span className="material-symbols-outlined" style={{fontSize: '18px'}}>remove_circle</span>
-                            </Link>
-                          </div>
-                        </td>
+                        {canAdjustStock && (
+                          <td style={{textAlign: 'right'}}>
+                            <div style={{display: 'inline-flex', gap: '0.25rem'}}>
+                              <Link to="/inventory/stock-in" className="btn btn-ghost btn-sm" title="Stock IN" style={{color: 'var(--success-green)'}}>
+                                <span className="material-symbols-outlined" style={{fontSize: '18px'}}>add_circle</span>
+                              </Link>
+                              <Link to="/inventory/stock-out" className="btn btn-ghost btn-sm" title="Stock OUT" style={{color: 'var(--error-red)'}}>
+                                <span className="material-symbols-outlined" style={{fontSize: '18px'}}>remove_circle</span>
+                              </Link>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
