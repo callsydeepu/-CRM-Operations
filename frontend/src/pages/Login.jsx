@@ -37,27 +37,33 @@ const Login = () => {
 
   return (
     <div className="login-page">
-      <div className="login-split">
+      <div className="login-card-container">
+        {/* Left Side: Visual / Branding */}
         <div className="login-panel-left hidden-mobile">
           <div className="login-brand">
-            <span className="material-symbols-outlined logo-icon">storefront</span>
-            <h1>Mini ERP + CRM</h1>
+            <div className="login-brand-icon-box">
+              <span className="material-symbols-outlined" style={{fontSize: '24px'}}>space_dashboard</span>
+            </div>
+            <span className="login-brand-title">Mini ERP + CRM</span>
           </div>
+          
           <div className="login-hero-text">
-            <h2>Streamline your business operations</h2>
-            <p>Manage your customers, inventory, and sales in one seamless platform designed for growing enterprises.</p>
+            <h1>Streamline your business operations.</h1>
+            <p>A unified platform for resource planning and customer relationship management. Secure, scalable, and designed for modern enterprises.</p>
           </div>
+          
           <div className="login-footer">
-            <span className="material-symbols-outlined">verified_user</span>
+            <span className="material-symbols-outlined" style={{fontSize: '18px', color: 'var(--primary)'}}>verified</span>
             <span>Secure Enterprise Gateway</span>
           </div>
         </div>
         
+        {/* Right Side: Login / Register Form */}
         <div className="login-panel-right">
           <div className="login-form-container">
             <div className="login-header">
-              <h2>{isRegisterMode ? 'Create an Account' : 'Welcome back'}</h2>
-              <p>{isRegisterMode ? 'Register your user account to get started.' : 'Please enter your credentials to access your dashboard.'}</p>
+              <h2>{isRegisterMode ? 'Create Account' : 'Welcome back'}</h2>
+              <p>{isRegisterMode ? 'Register your user account to access your workspace.' : 'Please enter your credentials to access your workspace.'}</p>
             </div>
             
             {error && <div className="login-error">{error}</div>}
@@ -100,14 +106,14 @@ const Login = () => {
               )}
 
               <div className="form-group">
-                <label className="form-label" htmlFor="email">Email</label>
+                <label className="form-label" htmlFor="email">Email Address</label>
                 <div className="form-input-icon-wrapper">
                   <span className="material-symbols-outlined input-icon">mail</span>
                   <input 
                     type="email" 
                     id="email" 
                     className="form-input form-input-with-icon" 
-                    placeholder="Enter your email" 
+                    placeholder="name@company.com" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required 
@@ -116,7 +122,9 @@ const Login = () => {
               </div>
               
               <div className="form-group">
-                <label className="form-label" htmlFor="password">Password</label>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
+                  <label className="form-label" htmlFor="password" style={{margin: 0}}>Password</label>
+                </div>
                 <div className="form-input-icon-wrapper">
                   <span className="material-symbols-outlined input-icon">lock</span>
                   <input 
@@ -130,6 +138,15 @@ const Login = () => {
                   />
                 </div>
               </div>
+
+              {!isRegisterMode && (
+                <div className="login-options">
+                  <label className="checkbox-label">
+                    <input type="checkbox" id="remember-me" />
+                    <span>Remember me on this device</span>
+                  </label>
+                </div>
+              )}
               
               <button 
                 type="submit" 
@@ -138,10 +155,10 @@ const Login = () => {
               >
                 {loading 
                   ? (isRegisterMode ? 'Creating account...' : 'Logging in...') 
-                  : (isRegisterMode ? 'Create Account' : 'Login to Dashboard')}
+                  : (isRegisterMode ? 'Register & Continue' : 'Login to Dashboard')}
               </button>
 
-              <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
+              <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm"
@@ -149,7 +166,7 @@ const Login = () => {
                     setIsRegisterMode(!isRegisterMode);
                     setError('');
                   }}
-                  style={{ color: 'var(--primary-container)', fontWeight: 600, fontSize: '0.9rem' }}
+                  style={{ color: 'var(--primary-container)', fontWeight: 600, fontSize: '13px' }}
                 >
                   {isRegisterMode ? 'Already have an account? Sign In' : "Don't have an account? Register"}
                 </button>
