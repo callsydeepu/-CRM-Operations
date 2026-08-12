@@ -1,5 +1,6 @@
 require('dotenv').config({ path: '.env' });
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcryptjs');
 
 const cleanDatabase = async () => {
   let pool;
@@ -17,7 +18,7 @@ const cleanDatabase = async () => {
     const connection = await pool.getConnection();
     await connection.query(`USE \`${process.env.DB_NAME}\``);
 
-    console.log('Cleaning all tables in database...');
+    console.log('Truncating all business records from database...');
     await connection.query('SET FOREIGN_KEY_CHECKS = 0');
     await connection.query('TRUNCATE TABLE challan_items');
     await connection.query('TRUNCATE TABLE challans');
@@ -27,7 +28,17 @@ const cleanDatabase = async () => {
     await connection.query('TRUNCATE TABLE users');
     await connection.query('SET FOREIGN_KEY_CHECKS = 1');
 
-    console.log('All 6 tables truncated successfully. Database is 100% clean and empty.');
+    console.log('Seeding clean authentication role accounts...');
+    const hashedPassword = await bcrypt.hash('Password123!', 10);
+    await connection.query(`
+      INSERT INTO users (name, email, password, role) VALUES
+      ('System Administrator', 'admin@example.com', ?, 'Admin'),
+      ('Sales Representative', 'sales@example.com', ?, 'Sales'),
+      ('Warehouse Manager', 'warehouse@example.com', ?, 'Warehouse'),
+      ('Accounts Auditor', 'accounts@example.com', ?, 'Accounts')
+    `, [hashedPassword, hashedPassword, hashedPassword, hashedPassword]);
+
+    console.log('All business tables truncated successfully.');
 
     // Count rows in all tables
     const [c1] = await connection.query('SELECT COUNT(*) as count FROM users');
@@ -37,7 +48,7 @@ const cleanDatabase = async () => {
     const [c5] = await connection.query('SELECT COUNT(*) as count FROM challans');
     const [c6] = await connection.query('SELECT COUNT(*) as count FROM challan_items');
 
-    console.log(`Current Row Counts:\n - Users: ${c1[0].count}\n - Customers: ${c2[0].count}\n - Products: ${c3[0].count}\n - Stock Movements: ${c4[0].count}\n - Challans: ${c5[0].count}\n - Challan Items: ${c6[0].count}`);
+    console.log(`\nCurrent Database Row Counts:\n - Users: ${c1[0].count} (Authentication accounts)\n - Customers: ${c2[0].count}\n - Products: ${c3[0].count}\n - Stock Movements: ${c4[0].count}\n - Challans: ${c5[0].count}\n - Challan Items: ${c6[0].count}\n`);
 
     connection.release();
     process.exit(0);

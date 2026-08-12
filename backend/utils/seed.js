@@ -1,5 +1,6 @@
 require('dotenv').config({ path: '.env' });
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcryptjs');
 
 const initDatabase = async () => {
   let pool;
@@ -114,7 +115,22 @@ const initDatabase = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
-    console.log('Clean database schema verified successfully (0 mock records).');
+    // Seed default authentication users if not already present
+    const [existingUsers] = await connection.query('SELECT id, email, role FROM users');
+    if (existingUsers.length === 0) {
+      console.log('Seeding baseline authentication role accounts...');
+      const hashedPassword = await bcrypt.hash('Password123!', 10);
+      await connection.query(`
+        INSERT INTO users (name, email, password, role) VALUES
+        ('System Administrator', 'admin@example.com', ?, 'Admin'),
+        ('Sales Representative', 'sales@example.com', ?, 'Sales'),
+        ('Warehouse Manager', 'warehouse@example.com', ?, 'Warehouse'),
+        ('Accounts Auditor', 'accounts@example.com', ?, 'Accounts')
+      `, [hashedPassword, hashedPassword, hashedPassword, hashedPassword]);
+      console.log('  ✓ 4 authentication user accounts created (Admin, Sales, Warehouse, Accounts).');
+    }
+
+    console.log('Database initialized successfully: ZERO business records (Customers=0, Products=0, Stock=0, Challans=0).');
     connection.release();
     process.exit(0);
   } catch (error) {

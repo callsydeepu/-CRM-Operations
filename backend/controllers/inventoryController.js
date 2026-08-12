@@ -53,7 +53,7 @@ const getMovements = async (req, res, next) => {
     const total = countResult[0].total;
     const totalPages = Math.ceil(total / limitNum);
 
-    query += ' ORDER BY sm.created_at DESC LIMIT ? OFFSET ?';
+    query += ' ORDER BY sm.created_at DESC, sm.id DESC LIMIT ? OFFSET ?';
     params.push(limitNum, offset);
 
     const [rows] = await pool.query(query, params);

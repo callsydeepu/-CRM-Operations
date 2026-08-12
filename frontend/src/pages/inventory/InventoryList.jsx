@@ -339,7 +339,7 @@ const InventoryList = () => {
           movements.length === 0 ? (
             <div style={{padding: '3rem', textAlign: 'center', color: 'var(--on-surface-variant)'}}>
               <span className="material-symbols-outlined" style={{fontSize: '48px', color: 'var(--outline)', marginBottom: '0.5rem'}}>history_toggle_off</span>
-              <p style={{fontSize: '1.1rem', fontWeight: 500, color: 'var(--on-surface)'}}>No stock movements recorded yet</p>
+              <p style={{fontSize: '1.1rem', fontWeight: 500, color: 'var(--on-surface)'}}>No stock movements found</p>
             </div>
           ) : (
             <>
